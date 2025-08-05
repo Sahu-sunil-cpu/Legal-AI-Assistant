@@ -1,8 +1,8 @@
-# 🧑‍⚖️ Legal AI Assistant
+#  Legal AI Assistant
 
 **Legal AI Assistant** is an AI-powered platform designed to serve as your personal legal advisor. It answers legal queries with professional clarity and depth, styled in beautifully formatted markdown. It also allows users to upload legal documents (images/PDFs), enabling document-based legal assistance.
 
-## 🚀 Features
+##  Features
 
 - 📚 **Ask Any Legal Question:** Get detailed, professional responses to legal questions from various domains (civil, criminal, corporate, etc.)
 - 🖼️ **Upload Legal Documents:** Upload PDFs or images of legal documents to get context-based insights.
@@ -12,7 +12,7 @@
 
 ---
 
-## 🧑‍⚖️ AI Prompt Design
+## AI Prompt Design
 
 ### 1. 🧩 Core Functionality of AI
 
