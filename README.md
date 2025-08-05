@@ -11,6 +11,13 @@
 - 🧠 **Context-Aware AI:** Trained with deep knowledge of Indian and international legal systems (customizable).
 
 ---
+## 📸 Screenshots
+
+![](./my-ai-app/app/public//image1.png)
+
+![](./my-ai-app/app/public//image2.png)
+
+---
 
 ## AI Prompt Design
 
