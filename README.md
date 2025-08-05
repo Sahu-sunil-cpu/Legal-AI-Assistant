@@ -13,9 +13,9 @@
 ---
 ## 📸 Screenshots
 
-![](./my-ai-app/app/public//image1.png)
+![](./my-ai-app/app/public/image1.png)
 
-![](./my-ai-app/app/public//image2.png)
+![](./my-ai-app/app/public/image2.png)
 
 ---
 
