@@ -7,14 +7,15 @@ import { useState, useRef, useEffect } from "react"
 import { useChat } from '@ai-sdk/react';
 import ReactMarkdown from 'react-markdown'
 import { Markdown } from "./Markdown"
+import { useApp } from "./context/AppContext"
 
 
 
 
 
 export function ChatInterface() {
+  const { state, dispatch } = useApp();
   const [message, setMessage] = useState("")
-  const [attachedFilesUrl, setAttachedFilesUrl] = useState<{url: string, type: string, name: string}[]>([])
   const [attachedFiles, setAttachedFiles] = useState<{
     file: File,
     url: string,
@@ -34,6 +35,13 @@ export function ChatInterface() {
     "I’ve uploaded a lease agreement — does it comply with tenant protection laws?",
 
   ]
+
+  useEffect(() => {
+    if (!state.newThread) return;
+    setAttachedFiles([]);
+    setMessage("");
+
+  }, [state.newThread])
 
   const handleSuggestionClick = (suggestion: string) => {
     setMessage(suggestion)
@@ -55,14 +63,16 @@ export function ChatInterface() {
   //     const file = await convertToBase64(f);
   //     const type = f.type == 'application/pdf' ? f.type : 'image/png'
   //     setAttachedFilesUrl(prev => [...prev, {url: file, type: type, name: f.name}]);
-    
+
   //     console.log(attachedFilesUrl)
   //   })
   // }, [attachedFiles])
 
   const handleSendMessage = () => {
+    dispatch({ type: "SET_NEW_THREAD", payload: false })
+    dispatch({ type: "SET_RESPONSE_LOADING", payload: true })
+
     if (message.trim()) {
-      console.log("Sending message:", message);
       sendMessage({
         role: 'user',
         parts: [
@@ -83,10 +93,10 @@ export function ChatInterface() {
           { type: 'text' as const, text: message },
         ],
       });
+
       // sendMessage({ text: message });
       setMessage("");
       setAttachedFiles([]);
-      setAttachedFilesUrl([]);
     }
   }
 
@@ -106,14 +116,13 @@ export function ChatInterface() {
 
     const files = Array.from(e.target.files || [])
     files.forEach(async f => {
-        
-          const fileUrl = await convertToBase64(f);
-          // const type = 
-          setAttachedFiles(prev => [...prev, {file: f, url: fileUrl}]);
-        
-          console.log(attachedFilesUrl)
-        })
-  //  setAttachedFiles(prev => [...prev, ...files]);
+
+      const fileUrl = await convertToBase64(f);
+      // const type = 
+      setAttachedFiles(prev => [...prev, { file: f, url: fileUrl }]);
+
+    })
+    //  setAttachedFiles(prev => [...prev, ...files]);
   }
 
   const removeFile = (index: number) => {
@@ -140,7 +149,7 @@ export function ChatInterface() {
     <div className="flex-1 flex flex-col h-full relative w-full max-w-full">
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 pb-40 text-wrap w-full">
-        {!messages[0] ? (
+        {!messages[0] || state.newThread ? (
           <div>
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-foreground mb-2">
@@ -162,24 +171,34 @@ export function ChatInterface() {
             </div>
           </div>
         ) : (
+
           <div className="flex flex-col gap-3 mb-8 w-full max-w-3xl sm:max-w-2xl px-2 whitespace-normal">
             <div className="flex-1 overflow-y-auto px-2 py-4">
               <div className="max-w-4xl mx-auto space-y-6">
+
                 {messages.map((msg) => (
                   <div
                     key={msg.id}
                     className={`flex gap-4 ${msg.role === 'user' ? 'justify-start' : 'justify-start'
                       }`}
                   >
-                    {msg.role !== 'user' ? (
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-                        <Bot className="w-4 h-4 text-primary-foreground" />
-                      </div>
-                    ) : (
+
+                    {msg.role == 'user' &&
                       <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center shrink-0">
+
                         <User className="w-4 h-4 text-accent-foreground" />
+
+
                       </div>
-                    )}
+                    }
+
+                    {msg.role !== 'user' &&
+                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
+
+                        <Bot className="w-4 h-4 text-primary-foreground" />
+                      </div> 
+                    }
+             
 
                     <div className="text-wrap overflow-x-auto break-words max-w-full whitespace-pre-wrap">
                       <div
@@ -188,14 +207,18 @@ export function ChatInterface() {
                           : 'text-foreground font-semibold text-md'
                           }`}
                       >
+
+                     
                         {msg.parts.map((part, i) => {
                           switch (part.type) {
                             case 'text':
                               return (
+
                                 <div
                                   key={`${msg.id}-${i}`}
                                   className="overflow-x-auto break-words max-w-full whitespace-pre-wrap"
                                 >
+
                                   {msg.role === 'user' ? (
                                     part.text
                                   ) : (
@@ -206,6 +229,8 @@ export function ChatInterface() {
                                     </Markdown>
                                   )}
                                 </div>
+
+
                               );
                             case 'file':
                               return (
@@ -222,7 +247,7 @@ export function ChatInterface() {
                                       :
                                       <img
                                         key={(part.filename || 'image') + i}
-                                        className="max-w-24 p-2 border border-border/30" 
+                                        className="max-w-24 p-2 border border-border/30"
                                         src={part.url}
                                         alt={part.mediaType ?? 'image'}
                                       />
