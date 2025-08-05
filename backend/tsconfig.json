@@ -7,6 +7,11 @@
     "moduleDetection": "force",
     "jsx": "react-jsx",
     "allowJs": true,
+    "baseUrl": "./src",      // Optional but helpful
+    "outDir": "./dist",      // Only if compiling with tsc
+    "paths": {
+      "@utils/*": ["utils/*"]
+    },
 
     // Bundler mode
     "moduleResolution": "bundler",
