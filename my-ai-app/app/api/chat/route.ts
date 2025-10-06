@@ -13,6 +13,8 @@ import {
   
   export async function POST(req: Request) {
     const { messages }: { messages: UIMessage[] } = await req.json();
+
+    console.log(messages)
   
     const result = streamText({
         model: google('gemini-2.5-flash'),
@@ -50,7 +52,12 @@ import {
       // },
     });
   
-    return result.toUIMessageStreamResponse();
+    return result.toUIMessageStreamResponse({
+      originalMessages: messages,
+      onFinish: ({ messages }) => {
+        
+      }
+    });
   }
 
 

@@ -8,6 +8,7 @@ import { useChat } from '@ai-sdk/react';
 import ReactMarkdown from 'react-markdown'
 import { Markdown } from "./Markdown"
 import { useApp } from "./context/AppContext"
+import AISpinner from "./Loader"
 
 
 
@@ -22,7 +23,7 @@ export function ChatInterface() {
   }[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { messages, sendMessage } = useChat();
+  const { messages, sendMessage, status, stop, setMessages, resumeStream } = useChat();
   const [inputWidth, setInputWidth] = useState(0);
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -69,6 +70,7 @@ export function ChatInterface() {
   // }, [attachedFiles])
 
   const handleSendMessage = () => {
+    console.log(messages)
     dispatch({ type: "SET_NEW_THREAD", payload: false })
     dispatch({ type: "SET_RESPONSE_LOADING", payload: true })
 
@@ -146,245 +148,217 @@ export function ChatInterface() {
   }, [message])
 
   return (
-    <div className="flex-1 flex flex-col h-full relative w-full max-w-full">
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col items-center justify-center px-4 pb-40 text-wrap w-full">
-        {!messages[0] || state.newThread ? (
-          <div>
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-foreground mb-2">
-                How can I help you today?
-              </h1>
-            </div>
+    <div className="flex-1 flex flex-col h-full relative w-full max-w-full bg-[#303030] text-white">
+  {/* Main Content Area */}
+  <div className="flex-1 flex flex-col items-center justify-center px-2 sm:px-4 pb-40 w-full">
+    {!messages[0] || state.newThread ? (
+      <div className="w-full">
+        <div className="text-center mb-8">
+          <h1 className="text-xl sm:text-3xl font-bold mb-2 text-white">
+            How can I help you today?
+          </h1>
+        </div>
 
-            <div className="flex flex-col sm:flex-row    gap-3 mb-8 justify-center flex-wrap text-wrap">
-              {suggestions.map((suggestion, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="px-6 py-3 rounded-full bg-suggestion border-border max-[600px]:hidden break-words hover:bg-suggestion-hover text-foreground transition-smooth"
-                  onClick={() => handleSuggestionClick(suggestion)}
-                >
-                  {suggestion}
-                </Button>
-              ))}
-            </div>
-          </div>
-        ) : (
-
-          <div className="flex flex-col gap-3 mb-8 w-full max-w-3xl sm:max-w-2xl px-2 whitespace-normal">
-            <div className="flex-1 overflow-y-auto px-2 py-4">
-              <div className="max-w-4xl mx-auto space-y-6">
-
-                {messages.map((msg) => (
-                  <div
-                    key={msg.id}
-                    className={`flex gap-4 ${msg.role === 'user' ? 'justify-start' : 'justify-start'
-                      }`}
-                  >
-
-                    {msg.role == 'user' &&
-                      <div className="w-8 h-8 rounded-full bg-accent flex items-center justify-center shrink-0">
-
-                        <User className="w-4 h-4 text-accent-foreground" />
-
-
-                      </div>
-                    }
-
-                    {msg.role !== 'user' &&
-                      <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0">
-
-                        <Bot className="w-4 h-4 text-primary-foreground" />
-                      </div> 
-                    }
-             
-
-                    <div className="text-wrap overflow-x-auto break-words max-w-full whitespace-pre-wrap">
-                      <div
-                        className={`rounded-2xl px-4 py-3 ${msg.role === 'user'
-                          ? 'text-stone-700 text-xl bg-muted font-semibold ml-auto text-foreground whitespace-normal break-words border p-4'
-                          : 'text-foreground font-semibold text-md'
-                          }`}
-                      >
-
-                     
-                        {msg.parts.map((part, i) => {
-                          switch (part.type) {
-                            case 'text':
-                              return (
-
-                                <div
-                                  key={`${msg.id}-${i}`}
-                                  className="overflow-x-auto break-words max-w-full whitespace-pre-wrap"
-                                >
-
-                                  {msg.role === 'user' ? (
-                                    part.text
-                                  ) : (
-                                    <Markdown >
-                                      {Array.isArray(part.text)
-                                        ? part.text.join(' ')
-                                        : part.text}
-                                    </Markdown>
-                                  )}
-                                </div>
-
-
-                              );
-                            case 'file':
-                              return (
-                                <div key={part.filename}>
-                                  {
-                                    part.mediaType !== "image/png" ?
-
-                                      <div key={part.filename} className="flex min-w-52 max-w-60 items-center bg-gray-300 gap-3 mb-1 border border-border/30 px-4 py-3 rounded-xl text-sm backdrop-blur-sm shadow-sm">
-                                        <FileIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        <div className="flex flex-col min-w-0">
-                                          <span className="truncate max-w-40 text-foreground font-medium border border-border/30">{part.filename}</span>
-                                        </div>
-                                      </div>
-                                      :
-                                      <img
-                                        key={(part.filename || 'image') + i}
-                                        className="max-w-24 p-2 border border-border/30"
-                                        src={part.url}
-                                        alt={part.mediaType ?? 'image'}
-                                      />
-
-                                  }
-
-                                </div>
-
-                              );
-                            case 'tool-weather':
-                            case 'tool-convertFahrenheitToCelsius':
-                              return (
-                                <pre key={`${msg.id}-${i}`}>
-                                  <div className="text-sm font-bold text-foreground mb-2">
-                                    {JSON.stringify(part, null, 2)}
-                                  </div>
-                                </pre>
-                              );
-                          }
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={messagesEndRef} />
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="flex flex-col sm:flex-row gap-3 mb-8 justify-center flex-wrap">
+          {suggestions.map((suggestion, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              className="px-6 py-3 rounded-full bg-[#3a3a3a] border border-gray-600 hover:bg-[#4a4a4a] text-white transition text-sm sm:text-base"
+              onClick={() => handleSuggestionClick(suggestion)}
+            >
+              {suggestion}
+            </Button>
+          ))}
+        </div>
       </div>
-
-      {/* Fixed Input Area */}
-      <div className="bottom-0 left-0 right-0 sticky">
-        <div className="max-w-3xl mx-auto px-4 pb-6 pt-8 w-full">
-          {attachedFiles.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-3">
-              {attachedFiles.map((file, index) => {
-                const FileIcon = getFileIcon(file.file);
-                return (
-                  <div key={index}>
-                    <button
-                      onClick={() => removeFile(index)}
-                      className=" hover:text-foreground transition-colors p-1 hover:bg-gray-400 rounded"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                    <div
-                      key={index}
-                      className="flex items-center gap-3 border text-sm shadow-sm  border-border/30 rounded-xl bg-gray-500"
-                    >
-
-                      {/* <FileIcon className="w-4 h-4 text-muted-foreground shrink-0" /> */}
-                      <div className="flex flex-row min-w-0">
-                        {
-                          file.file.type == "application/pdf" || file.file.type == "application/docx" ?
-                            <div key={index} className="flex items-center bg-gray-300 gap-3 border border-border/30 px-4 py-3 rounded-xl text-sm backdrop-blur-sm shadow-sm">
-                              <FileIcon className="w-4 h-4 text-muted-foreground shrink-0" />
-                              <div className="flex flex-col min-w-0">
-                                <span className="truncate max-w-40 text-foreground font-medium">{file.file.name}</span>
-                                <span className="text-xs text-muted-foreground">{(file.file.size / 1024).toFixed(1)} KB</span>
-                              </div>
+    ) : (
+      <div className="flex flex-col gap-3 mb-8 w-full max-w-3xl sm:max-w-2xl px-2 whitespace-normal">
+        <div className="flex-1 overflow-y-auto px-1 py-4">
+          <div className="max-w-4xl mx-auto space-y-6">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex gap-4 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div className="text-wrap overflow-x-auto break-words max-w-full whitespace-pre-wrap">
+                  <div
+                    className={`rounded-2xl px-4 py-3 text-sm sm:text-base shadow-md ${
+                      msg.role === 'user'
+                        ? 'bg-[#4b5563] text-white border border-gray-600'
+                        : ' text-white border border-gray-600'
+                    }`}
+                  >
+                    {msg.parts.map((part, i) => {
+                      switch (part.type) {
+                        case 'text':
+                          return (
+                            <div
+                              key={`${msg.id}-${i}`}
+                              className="overflow-x-auto break-words max-w-full whitespace-pre-wrap"
+                            >
+                              {msg.role === 'user' ? (
+                                <div>{part.text}</div>
+                              ) : (
+                                <Markdown>
+                                  {Array.isArray(part.text)
+                                    ? part.text.join(' ')
+                                    : part.text}
+                                </Markdown>
+                              )}
                             </div>
-                            :
-                            <img src={URL.createObjectURL(file.file)} alt="img" className=" max-w-24 border-border/30 rounded-xl" />
-                        }
-
-
-
-                        {/* <span className="text-xs text-muted-foreground">
-                    {(file.size / 1024).toFixed(1)} KB
-                  </span> */}
-
-                      </div>
-
-                    </div>
+                          );
+                        case 'file':
+                          return (
+                            <div key={part.filename}>
+                              {part.mediaType !== 'image/png' ? (
+                                <div className="flex min-w-52 max-w-60 items-center bg-gray-700 gap-3 mb-1 border border-gray-600 px-4 py-3 rounded-xl text-sm shadow-sm">
+                                  <FileIcon className="w-4 h-4 text-gray-300 shrink-0" />
+                                  <div className="flex flex-col min-w-0">
+                                    <span className="truncate max-w-40 text-white font-medium">
+                                      {part.filename}
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <img
+                                  key={(part.filename || 'image') + i}
+                                  className="max-w-24 p-2 border border-gray-600 rounded"
+                                  src={part.url}
+                                  alt={part.mediaType ?? 'image'}
+                                />
+                              )}
+                            </div>
+                          );
+                        case 'tool-weather':
+                        case 'tool-convertFahrenheitToCelsius':
+                          return (
+                            <pre key={`${msg.id}-${i}`}>
+                              <div className="text-sm font-bold text-white mb-2">
+                                {JSON.stringify(part, null, 2)}
+                              </div>
+                            </pre>
+                          );
+                      }
+                    })}
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              </div>
+            ))}
 
-          )}
-
-          <div
-            className="relative bg-input-background border border-border/30 rounded-3xl shadow-lg backdrop-blur-sm"
-            onClick={(e) => setInputWidth(e.currentTarget.clientWidth)}
-          >
-            <div className="flex items-center gap-3 px-4 py-3">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleFileAttach}
-                className="w-8 h-8 p-0 hover:bg-muted/50 rounded-lg transition-all duration-200 shrink-0"
-              >
-                <Paperclip className="w-4 h-4" />
-              </Button>
-
-              <Textarea
-                ref={textareaRef}
-                placeholder="Start Chating ...."
-                value={message}
-                onChange={(e) => {
-                  setMessage(e.target.value);
-                  adjustTextareaHeight();
-                }}
-                onKeyPress={handleKeyPress}
-                className="flex-1 bg-transparent border-0 outline-none text-foreground placeholder:text-black resize-none min-h-[24px] max-h-[200px] overflow-y-auto"
-                rows={1}
-              />
-
-              <Button
-                onClick={handleSendMessage}
-                disabled={!message.trim() && attachedFiles.length === 0}
-                className="w-8 h-8 p-0 bg-white hover:bg-white/90 disabled:bg-muted disabled:opacity-50 rounded-lg transition-all duration-200 shrink-0 text-black"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/*,.pdf,.doc,.docx,.txt"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-          </div>
-
-          <div className="text-center mt-3">
-            <p className="text-xs text-muted-foreground">
-              legal-assistant-ui can make mistakes. Check important info.
-            </p>
+            {(status === 'submitted' || status === 'streaming') && (
+              <div>
+                {status === 'submitted' && (
+                  <img src="/lexi.svg" alt="Loading..." className="mx-auto" />
+                )}
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
         </div>
       </div>
+    )}
+  </div>
+
+  {/* Fixed Input Area */}
+  <div className="bottom-0 left-0 right-0 sticky w-full bg-[#303030]">
+    <div className="max-w-3xl mx-auto px-3 sm:px-4 pb-6 pt-8 w-full">
+      {attachedFiles.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-3">
+          {attachedFiles.map((file, index) => {
+            const FileIcon = getFileIcon(file.file);
+            return (
+              <div key={index}>
+                <button
+                  onClick={() => removeFile(index)}
+                  className="hover:text-gray-800 transition-colors p-1 hover:bg-gray-100 rounded"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <div className="flex items-center gap-3 border text-sm shadow-sm border-gray-600 rounded-xl bg-gray-700">
+                  {file.file.type === 'application/pdf' ||
+                  file.file.type === 'application/docx' ? (
+                    <div className="flex items-center bg-gray-700 gap-3 border border-gray-600 px-4 py-3 rounded-xl text-sm shadow-sm">
+                      <FileIcon className="w-4 h-4 text-gray-300 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate max-w-40 text-white font-medium">
+                          {file.file.name}
+                        </span>
+                        <span className="text-xs text-gray-300">
+                          {(file.file.size / 1024).toFixed(1)} KB
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <img
+                      src={URL.createObjectURL(file.file)}
+                      alt="img"
+                      className="max-w-24 border border-gray-600 rounded-xl"
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div
+        className="relative border border-gray-100 rounded-2xl shadow-lg"
+        onClick={(e) => setInputWidth(e.currentTarget.clientWidth)}
+      >
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 px-3 py-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleFileAttach}
+            className="w-9 h-9 p-0 hover:bg-gray-900 rounded-lg transition-all duration-200 shrink-0"
+          >
+            <Paperclip className="w-4 h-4 text-white " />
+          </Button>
+
+          <Textarea
+            ref={textareaRef}
+            value={message}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              adjustTextareaHeight();
+            }}
+            onKeyPress={handleKeyPress}
+            className="flex-1 bg-transparent border-0 outline-none text-white placeholder:text-gray-400 resize-none min-h-[28px] max-h-[200px] overflow-y-auto text-sm sm:text-base"
+            rows={1}
+          />
+
+          <Button
+            onClick={handleSendMessage}
+            disabled={
+              (!message.trim() && attachedFiles.length === 0) || status !== 'ready'
+            }
+            className="w-9 h-9 p-0 bg-white hover:bg-gray-300 disabled:bg-gray-600 text-black rounded-lg transition-all duration-200 shrink-0"
+          >
+            <Send className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept="image/*,.pdf,.doc,.docx,.txt"
+          onChange={handleFileChange}
+          className="hidden"
+        />
+      </div>
+
+      <div className="text-center mt-3">
+        <p className="text-xs text-gray-400">
+          legal-assistant-ui can make mistakes. Check important info.
+        </p>
+      </div>
     </div>
+  </div>
+</div>
 
   )
 }
@@ -392,44 +366,3 @@ export function ChatInterface() {
 
 
 
-export default function Chat() {
-  const [input, setInput] = useState('');
-  const { messages, sendMessage } = useChat();
-  return (
-    <div className="flex flex-col w-full max-w-md py-24 mx-auto stretch">
-      {messages.map(message => (
-        <div key={message.id} className="whitespace-pre-wrap">
-          {message.role === 'user' ? 'User: ' : 'AI: '}
-          {message.parts.map((part, i) => {
-            switch (part.type) {
-              case 'text':
-                return <div key={`${message.id}-${i}`}>{part.text}</div>;
-              case 'tool-weather':
-              case 'tool-convertFahrenheitToCelsius':
-                return (
-                  <pre key={`${message.id}-${i}`}>
-                    {JSON.stringify(part, null, 2)}
-                  </pre>
-                );
-            }
-          })}
-        </div>
-      ))}
-
-      <form
-        onSubmit={e => {
-          e.preventDefault();
-          sendMessage({ text: input });
-          setInput('');
-        }}
-      >
-        <input
-          className="fixed dark:bg-zinc-900 bottom-0 w-full max-w-md p-2 mb-8 border border-zinc-300 dark:border-zinc-800 rounded shadow-xl"
-          value={input}
-          placeholder="Say something..."
-          onChange={e => setInput(e.currentTarget.value)}
-        />
-      </form>
-    </div>
-  );
-}
